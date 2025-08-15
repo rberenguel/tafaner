@@ -6,7 +6,34 @@ let contactNameToMatch = "Max Mustermann"; // Default value
 chrome.storage.local.get({ contactName: "You" }, function (items) {
   contactNameToMatch = items.contactName;
   console.log(`Will look for contact name: "${contactNameToMatch}"`);
-  observeChat(); // Start observer only after settings are loaded
+  initialSetup(); // Start observer only after settings are loaded
+});
+
+function simulateClick(element) {
+  const eventOptions = { bubbles: true, cancelable: true, view: window };
+
+  element.dispatchEvent(new MouseEvent("mousedown", eventOptions));
+  element.dispatchEvent(new MouseEvent("mouseup", eventOptions));
+  element.dispatchEvent(new MouseEvent("click", eventOptions));
+}
+
+// --- FUNCTION TO FOCUS THE CHAT ---
+function autoFocusChat() {
+  const chat = document.querySelector(`span[title="${contactNameToMatch}"]`);
+  if (chat) {
+    simulateClick(chat);
+  } else {
+    console.warn(
+      "Could not find chat to self. Get a name that is easier to find!",
+    );
+  }
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    console.log("Tab is no longer visible, running auto-focus.");
+    autoFocusChat();
+  }
 });
 
 function isChatWithSelf() {
@@ -15,48 +42,70 @@ function isChatWithSelf() {
     .some((v) => v);
 }
 
-const observeChat = () => {
-  const chatPanel = document.querySelector("div#main");
-  if (!chatPanel) {
-    setTimeout(observeChat, 1000);
+function attachChatObserver(chatPanel) {
+  // Use a data attribute to prevent attaching multiple observers to the same element
+  if (chatPanel.dataset.chatObserverAttached) {
     return;
   }
+  console.log("Attaching chat observer to", chatPanel);
+  chatPanel.dataset.chatObserverAttached = "true";
 
   const observer = new MutationObserver((mutationsList) => {
-    // Only proceed if the chat is with yourself to avoid unnecessary work
-    if (!isChatWithSelf()) {
-      return;
-    }
+    if (!isChatWithSelf()) return;
 
     const addedMessages = [];
-
-    // 1. Collect all valid outgoing message nodes from the batch of mutations
     for (const mutation of mutationsList) {
-      if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
-        mutation.addedNodes.forEach((node) => {
-          if (node.nodeType === 1 && node.querySelector(".message-out")) {
-            addedMessages.push(node);
-          }
-        });
+      for (const node of mutation.addedNodes) {
+        if (node.nodeType === 1 && node.querySelector(".message-out")) {
+          addedMessages.push(node);
+        }
       }
     }
 
-    // 2. If any messages were found, process only the VERY LAST one
     if (addedMessages.length > 0) {
       const lastMessageNode = addedMessages[addedMessages.length - 1];
       const messageText = lastMessageNode.querySelector(
         ".copyable-text span",
       )?.textContent;
-
       if (messageText && !messageText.startsWith("skip")) {
         console.log("Detected final message to self:", messageText);
         chrome.runtime.sendMessage({
           action: "triggerLocalhost",
-          message: messageText,
+          message: "- [ ] " + messageText,
         });
       }
     }
   });
 
   observer.observe(chatPanel, { childList: true, subtree: true });
-};
+}
+
+function initialSetup() {
+  const mainPanel = document.querySelector("div#main");
+
+  if (!mainPanel) {
+    // If the panel isn't ready, retry in a second.
+    setTimeout(initialSetup, 1000);
+    return;
+  }
+
+  console.log("Chat panel found. Running initial setup.");
+
+  // 1. Attach the primary observer for the first time.
+  attachChatObserver(mainPanel);
+
+  // 2. Run the autofocus on initial load.
+  autoFocusChat();
+
+  // 3. Start a periodic "health check" to ensure the observer stays alive.
+  setInterval(() => {
+    const currentPanel = document.querySelector("div#main");
+    // If the panel exists but our marker is gone, it means WhatsApp replaced it.
+    if (currentPanel && !currentPanel.dataset.chatObserverAttached) {
+      console.log(
+        "Chat panel seems to have been replaced. Re-attaching observer...",
+      );
+      attachChatObserver(currentPanel);
+    }
+  }, 5000); // Check every 5 seconds.
+}
