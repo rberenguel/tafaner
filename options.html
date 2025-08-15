@@ -1,0 +1,48 @@
+<!doctype html>
+<html>
+  <head>
+    <title>WhatsApp Trigger Options</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 10px 20px;
+      }
+      div {
+        margin-bottom: 15px;
+      }
+      label {
+        display: inline-block;
+        width: 120px;
+      }
+      input {
+        width: 200px;
+      }
+      button {
+        padding: 5px 15px;
+      }
+      #status {
+        margin-top: 10px;
+        font-weight: bold;
+        color: green;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Settings</h2>
+
+    <div>
+      <label for="contactName">Contact Name:</label>
+      <input type="text" id="contactName" />
+    </div>
+
+    <div>
+      <label for="port">Localhost Port:</label>
+      <input type="number" id="port" />
+    </div>
+
+    <button id="save">Save</button>
+    <div id="status"></div>
+
+    <script src="options.js"></script>
+  </body>
+</html>
