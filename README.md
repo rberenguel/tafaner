@@ -9,12 +9,14 @@ A simple Chrome extension and Go server that captures messages you send to yours
 
 This project provides a straightforward way to use WhatsApp as a quick note-to-self tool. It works in two parts:
 
-1.  **A Chrome Extension**: This extension injects a script into WhatsApp Web. It monitors the chat DOM and, when it detects a message sent to your configured contact name (i.e., yourself), it sends the message content to a local server.
+1.  **A Chrome Extension**: This extension injects a script into WhatsApp Web. It monitors the chat DOM and, when it detects a message sent to your configured contact name (i.e., yourself), it sends the message content to a local server. When you leave Whatsapp Web it tries to make sure the chat with yourself is "focused" so it sees it properly.
 2.  **A Go Server**: A lightweight, standalone HTTP server that listens for `POST` requests from the extension. Upon receiving a message, it appends the text to a specified file, creating a running log or note file.
 
 The contact name and server port are configurable via the extension's options page.
 
 If the message starts with the word _skip_ it will be ignored. Useful for long messages you did not intend to have as tasks.
+
+_Caveat_: This can potentially generate a lot of duplicates in your destination file, because knowing what has been sent and what not is not something I want to worry about for now (it would be just a matter of checking the destination file, but I don't want to have to bother yet).
 
 ## Setup and Usage
 
