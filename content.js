@@ -67,6 +67,36 @@ function attachChatObserver(chatPanel) {
       const messageText = lastMessageNode.querySelector(
         ".copyable-text span",
       )?.textContent;
+      const messageTime =
+        lastMessageNode.querySelector("div.copyable-text")?.dataset
+          .prePlainText;
+
+      if (messageTime) {
+        const match = messageTime.match(
+          /\[(\d{2}:\d{2}), (\d{2}\/\d{2}\/\d{4})\]/,
+        );
+        if (match) {
+          const timeParts = match[1].split(":");
+          const dateParts = match[2].split("/");
+
+          const hours = parseInt(timeParts[0], 10);
+          const minutes = parseInt(timeParts[1], 10);
+          const day = parseInt(dateParts[0], 10);
+          const month = parseInt(dateParts[1], 10) - 1; // JS months are 0-indexed
+          const year = parseInt(dateParts[2], 10);
+
+          const messageDate = new Date(year, month, day, hours, minutes);
+          const now = new Date();
+
+          const diffSeconds = (now - messageDate) / 1000;
+
+          if (diffSeconds > 30) {
+            console.log("Skipping old message from:", messageDate);
+            return; // Exit if the message is too old
+          }
+        }
+      }
+
       if (messageText && !messageText.startsWith("skip")) {
         console.log("Detected final message to self:", messageText);
         chrome.runtime.sendMessage({
