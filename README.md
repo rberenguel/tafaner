@@ -16,7 +16,7 @@ The contact name and server port are configurable via the extension's options pa
 
 If the message starts with the word _skip_ it will be ignored. Useful for long messages you did not intend to have as tasks.
 
-_Caveat_: This can potentially generate a lot of duplicates in your destination file, because knowing what has been sent and what not is not something I want to worry about for now (it would be just a matter of checking the destination file, but I don't want to have to bother yet).
+_Caveat_: This can potentially generate duplicates in your destination file. It will only send messages from within the last 30 seconds, but you never know with timezones and JavaScript.
 
 ## Setup and Usage
 
